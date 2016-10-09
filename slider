@@ -1,116 +1,187 @@
 /**
- * Created by yqj on 2016/10/8.
+ * Created by thenCoding on 2016/10/8.
  */
 (function ($) {
 
     /**
      * 轮播器的默认配置
-     * @type {{style: string, current_frame: number, timer: null, delay: number, speed: number, complete: null}}
+     * @type {{delay: number, speed: number, style: string, complete: null, timer: null, current_frame: number}}
      */
-    var player = {
-        style: 'slide',                        //轮播的风格
-        current_frame : 1,                     //轮播的当前帧
-        timer: null,                           //轮播的计时器
-        delay: 3000,                           //轮播的每帧间隔
-        speed: 500,                            //轮播的过渡时间
-        complete: null,                        //每帧完成后的监听器
-        play: play,                            //轮播开始函数
-        pause: pause,                          //轮播暂停函数
-        frames:$('.slider-item').length,       //轮播总共的帧数
-        continue: start                        //暂停后继续轮播函数
+    var config_default = {
+        delay: 3500,
+        speed: 500,
+        style: 'slide',
+        complete: null,
+        timer: null,
+        current_frame: 1,
+        visibleCount: 5
     };
 
     /**
-     * 轮播器
-     * @param param {object}
+     * 轮播器构造函数
+     * @constructor
+     * @param id {string} required
+     * @param config {object}
      */
-    function play(param) {
+    function Slider(id, config) {
 
-        /**
-         * 根据用户传参，配置轮播器的样式，速度，间隔，每帧监听器(每帧完成后调用)
-         */
-        if (param && isNaN(param)) {
-            player.style = param.style || player.style;
-            player.delay = param.delay || player.delay;
-            player.speed = param.speed || player.speed;
-            player.complete = param.complete || player.complete;
+        if (id && typeof id == 'string') {
+
+            //获取当前轮播器的最外层dom元素
+            this.domElement = $('#' + id.replace(/^#|\./, ''));
+
+            //获取当前轮播器的帧数
+            this.frames = this.domElement.find('.slider-item').length;
+
+        } else {
+
+            console.error('the first argument of Slider is required and should be string! ');
+
+            return
         }
 
+        if (!this.domElement.get(0)) {
+
+            console.error('can not find domElement by selector ' + id);
+
+            return
+        }
+
+        if (config && isNaN(config)) {
+
+            this.style = config.style || 'slide';
+            this.delay = config.delay || config_default.delay;
+            this.speed = config.speed || config_default.speed;
+            this.complete = config.complete || null;
+            config.style == 'surround' && (this.visibleCount = config.visibleCount || config_default.visibleCount);
+
+        }
+
+        this.current_frame = config_default.current_frame;
+        this.timer = config_default.timer;
+
         //初始化轮播组件的CSS样式
-        initCss();
+        initCss(this);
+    }
+
+    /**
+     * 轮播器开启
+     */
+    Slider.prototype.play = function () {
+
+        var self = this;
 
         //开始轮播
-        autoplay();
-    }
+        autoplay(self);
+    };
+
 
     /**
      * 暂停轮播
      */
-    function pause () {
-        clearInterval(player.timer);
-    }
+    Slider.prototype.pause = function () {
+
+        clearInterval(this.timer);
+
+    };
 
     /**
      * 暂停后继续轮播
      */
-    function start () {
-        autoplay();
-    }
+    Slider.prototype.continue = function () {
+
+        autoplay(this);
+
+    };
 
     /**
      * 展示轮播器的某一帧
      * @param index
      */
-    function showFrame (index) {
-        clearInterval(player.timer);
-        if (player.style == 'slide') {
-            keyframe_slide(index || 0);
-        }else {
-            keyframe_fade(index || 0);
+    Slider.prototype.go = function (index) {
+
+        clearInterval(this.timer);
+
+        if (this.style == 'slide') {
+
+            keyframe_slide(index || 0, this);
+
+        } else {
+
+            keyframe_fade(index || 0, this);
+
         }
-        player.current_frame = index + 1;
-        autoplay();
-    }
+
+        this.current_frame = index + 1;
+
+        autoplay(this);
+
+    };
 
     /**
      * 初始化CSS样式
+     * @param context required
      */
-    function initCss() {
-        var banner = $('.banner');
-        var slider = $('.slider');
-        var slider_item = $('.slider-item');
+    function initCss(context) {
 
-        switch (player.style) {
+        var banner = context.domElement;
+
+        var slider = context.domElement.find('.slider');
+
+        var slider_item = context.domElement.find('.slider-item');
+
+        switch (context.style) {
+
             case 'fade' :
+
                 initCss_fade(banner, slider, slider_item);
+
                 break;
+
             case 'slide' :
+
                 initCss_slide(banner, slider, slider_item);
+
                 break;
+
+            case 'surround':
+
+                initCss_surround(banner, slider, slider_item);
+
+                break;
+
             default:
+
                 initCss_slide(banner, slider, slider_item);
+
                 break;
+
         }
     }
 
     /**
      * 配置为fade风格的轮播初始化样式
-     * @param banner
-     * @param slider
-     * @param slider_item
+     * @param banner required
+     * @param slider required
+     * @param slider_item required
      */
     function initCss_fade(banner, slider, slider_item) {
+
         banner.css({
             'position': 'relative',
             'overflow': 'auto'
+        });
+
+        slider.css({
+            width: '100%'
         });
 
         slider_item.css({
             position: 'absolute',
             top: 0,
             left: 0,
-            opacity: 0,
-            'max-width': '100%'
+            opacity: 1,
+            'width': '100%'
         });
 
         slider_item.eq(0).css({
@@ -120,19 +191,47 @@
 
     /**
      * 配置为slide风格的初始化样式
-     * @param banner
-     * @param slider
-     * @param slider_item
+     * @param banner required
+     * @param slider required
+     * @param slider_item required
      */
     function initCss_slide(banner, slider, slider_item) {
+
         banner.css({
             'overflow': 'hidden',
-            width: '100%'
+            'width': '100%'
         });
 
         slider_item.css({
-            float: 'left',
-            'width': 100/slider_item.length + '%'
+            'float': 'left',
+            'width': 100 / slider_item.length + '%'
+        });
+
+        slider.eq(0).css({
+            'width': slider_item.length * 100 + '%',
+            'margin-left': 0,
+            'overflow': 'hidden'
+        })
+    }
+
+    /**
+     * 配置为surround风格的初始化样式
+     * @param banner required
+     * @param slider required
+     * @param slider_item required
+     */
+    function initCss_surround(banner, slider, slider_item) {
+
+        banner.css({
+            'position': 'relative',
+            'overflow': 'hidden',
+            'width': '100%'
+        });
+
+        slider_item.css({
+            'position': 'absolute',
+            'float': 'left',
+            'width': 100 / slider_item.length + '%'
         });
 
         slider.eq(0).css({
@@ -144,71 +243,130 @@
 
     /**
      * 自动轮播函数
+     * @param context
      */
-    function autoplay() {
-        switch (player.style) {
+    function autoplay(context) {
+
+        switch (context.style) {
+
             case 'fade':
-                player.timer = timer(keyframe_fade);
+
+                context.timer = timer(keyframe_fade, context);
+
                 break;
 
             case 'slide':
-                player.timer = timer(keyframe_slide);
+
+                context.timer = timer(keyframe_slide, context);
+
+                break;
+
+            case 'surround':
+
+                context.timer = timer(keyframe_surround, context);
+
                 break;
 
             default:
-                player.timer = timer(keyframe_slide);
+
+                context.timer = timer(keyframe_slide, context);
+
                 break;
         }
     }
 
     /**
      * 计时器
+     * @param context
+     * @param fn
      */
-    function timer (fn) {
+    function timer(fn, context) {
+
         return setInterval(function () {
-            fn(player.current_frame, player.speed);
-            player.current_frame++;
-            player.current_frame >= player.frames && (player.current_frame = 0);
-        }, player.delay);
+
+            fn(context.current_frame, context);
+
+            context.current_frame++;
+
+            context.current_frame >= context.frames && (context.current_frame = 0);
+
+        }, context.delay);
+
     }
 
     /**
      * 配置风格为slide时每一次轮播的帧样式
      * @param index {number}
+     * @param context
      */
-    function keyframe_slide(index) {
-        player.current_frame = index;
-        $('.slider').eq(0).animate({
+    function keyframe_slide(index, context) {
+
+        context.current_frame = index;
+
+        context.domElement.find('.slider').eq(0).animate({
             'margin-left': -100 * index + '%'
-        }, player.speed);
-        if (player.complete) {
+        }, context.speed);
+
+        if (context.complete) {
+
             setTimeout(function () {
-                player.complete(index);
-            },player.speed);
+
+                context.complete(index);
+
+            }, context.speed);
         }
     }
 
     /**
-     * 配置风格为fade时每一次轮播的帧样式 todo:待完善
+     * 配置风格为fade时每一次轮播的帧样式
      * @param index
+     * @param context
      */
-    function keyframe_fade(index) {
-        player.current_frame = index;
-        $('.slider').eq(0).animate({
+    function keyframe_fade(index, context) {
 
-        }, player.speed);
+        context.current_frame = index;
+
+        context.domElement.find('.slider-item').animate({
+            'opacity': 0
+        }, context.speed).eq(index).animate({
+            'opacity': 1
+        }, context.speed);
+
+        if (context.complete) {
+
+            setTimeout(function () {
+
+                context.complete(index);
+
+            }, context.speed);
+        }
     }
 
-    $.extend({
-        play: player.play,
-        pause: player.pause,
-        continue: player.continue,
-        showFrame: showFrame
-    });
-    $.fn.extend({
-        play: player.play,
-        pause: player.pause,
-        continue: player.continue,
-        showFrame: showFrame
-    });
+    /**
+     * 配置风格为surround时每一次轮播的帧样式
+     * @param index
+     * @param context
+     */
+    function keyframe_surround(index, context) {
+
+        context.current_frame = index;
+
+        context.domElement.find('.slider-item').animate({
+            'opacity': 0
+        }, context.speed).eq(index).animate({
+            'opacity': 1
+        }, context.speed);
+
+        if (context.complete) {
+
+            setTimeout(function () {
+
+                context.complete(index);
+
+            }, context.speed);
+        }
+    }
+
+    window.Slider = Slider;
+
 })(jQuery);
