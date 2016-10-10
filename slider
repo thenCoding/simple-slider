@@ -146,7 +146,7 @@
 
             case 'surround':
 
-                initCss_surround(banner, slider, slider_item);
+                initCss_surround(banner, slider, slider_item, context);
 
                 break;
 
@@ -219,26 +219,80 @@
      * @param banner required
      * @param slider required
      * @param slider_item required
+     * @param context required
      */
-    function initCss_surround(banner, slider, slider_item) {
+    function initCss_surround(banner, slider, slider_item, context) {
+
+        var width_wrapper = parseFloat(context.domElement.css('width'));
 
         banner.css({
             'position': 'relative',
-            'overflow': 'hidden',
-            'width': '100%'
-        });
-
-        slider_item.css({
-            'position': 'absolute',
-            'float': 'left',
-            'width': 100 / slider_item.length + '%'
+            'overflow': 'hidden'
         });
 
         slider.eq(0).css({
             'width': slider_item.length * 100 + '%',
             'margin-left': 0,
             'overflow': 'hidden'
-        })
+        });
+
+        slider_item.css({
+            'position': 'absolute'
+        });
+        if (context.visibleCount % 2 == 0) {
+            context.visibleCount++;
+        }
+
+        var maxIndex = (context.visibleCount + 1) / 2;
+        var baseWidth = parseFloat(slider_item.eq(maxIndex-1).css('width'));
+        console.log(baseWidth);
+        for (var i = 0; i < context.visibleCount; i++) {
+
+            i + 1 == maxIndex && slider_item.eq(i).css({
+                'z-index': maxIndex,
+                //'height': 0.9 * width_wrapper + 'px',
+                //'width': 0.2 * width_wrapper + 'px',
+                'top': '50px',
+                'left': 0.4 * width_wrapper + 'px'
+            });
+
+            if (i + 1 != maxIndex) {
+                slider_item.eq(i).css({
+                    'z-index': maxIndex - Math.abs(i + 1 - maxIndex),
+                    //'height': 0.9 * width_wrapper * Math.pow(0.8, Math.abs(i + 1 - maxIndex)) + 'px',
+                    'width': baseWidth * Math.pow(0.8, Math.abs(i + 1 - maxIndex)) + 'px',
+                    'top': 50 * Math.abs(i + 1 - maxIndex) + 50 + 'px'
+                })
+            }
+        }
+
+        for (var l = 0; l < context.visibleCount; l++) {
+
+            if (l + 1 < maxIndex) {
+                var range = Math.abs(maxIndex - (l + 1));
+                console.log(range);
+                var left = 0;
+                for (var j = 0; j < range; j++) {
+                    console.log(parseFloat(slider_item.eq(l + j + 1).css('width')));
+                    left += (0.1 * width_wrapper);
+                }
+                console.log(left);
+                slider_item.eq(l).css({
+                    left: (0.5 * width_wrapper) - parseFloat(slider_item.eq(l).css('width')) / 2 - (range * 0.1 * width_wrapper) + 'px'
+                });
+            } else if (l + 1 > maxIndex) {
+                var range = Math.abs(l + 1 - maxIndex);
+                console.log(range);
+                var left = 0;
+                for (var k = 0; k < range; k++) {
+                    left += (0.1 * width_wrapper);
+                }
+                slider_item.eq(l).css({
+                    left: (0.5 * width_wrapper) - parseFloat(slider_item.eq(l).css('width')) / 2 + (range * 0.1 * width_wrapper) + 'px'
+                });
+            }
+        }
+
     }
 
     /**
@@ -307,7 +361,7 @@
             'margin-left': -100 * index + '%'
         }, context.speed);
 
-        if (context.complete) {
+        if (context.complete && context.complete instanceof Function) {
 
             setTimeout(function () {
 
@@ -332,7 +386,7 @@
             'opacity': 1
         }, context.speed);
 
-        if (context.complete) {
+        if (context.complete && context.complete instanceof Function) {
 
             setTimeout(function () {
 
@@ -357,7 +411,7 @@
             'opacity': 1
         }, context.speed);
 
-        if (context.complete) {
+        if (context.complete && context.complete instanceof Function) {
 
             setTimeout(function () {
 
