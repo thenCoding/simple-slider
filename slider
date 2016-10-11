@@ -14,8 +14,10 @@
         complete: null,
         timer: null,
         current_frame: 1,
-        visibleCount: 5
+        visibleCount: 5,
+        scale: 0.8
     };
+
 
     /**
      * 轮播器构造函数
@@ -54,6 +56,7 @@
             this.speed = config.speed || config_default.speed;
             this.complete = config.complete || null;
             config.style == 'surround' && (this.visibleCount = config.visibleCount || config_default.visibleCount);
+            config.style == 'surround' && (this.scale = config.scale || config_default.scale);
 
         }
 
@@ -223,8 +226,8 @@
      */
     function initCss_surround(banner, slider, slider_item, context) {
 
-        var width_wrapper = parseFloat(context.domElement.css('width'));
-
+        context.width_wrapper = parseFloat(context.domElement.css('width'));
+        context.item = slider_item;
         banner.css({
             'position': 'relative',
             'overflow': 'hidden'
@@ -244,55 +247,94 @@
         }
 
         var maxIndex = (context.visibleCount + 1) / 2;
-        var baseWidth = parseFloat(slider_item.eq(maxIndex-1).css('width'));
-        console.log(baseWidth);
-        for (var i = 0; i < context.visibleCount; i++) {
 
-            i + 1 == maxIndex && slider_item.eq(i).css({
-                'z-index': maxIndex,
-                //'height': 0.9 * width_wrapper + 'px',
-                //'width': 0.2 * width_wrapper + 'px',
-                'top': '50px',
-                'left': 0.4 * width_wrapper + 'px'
-            });
+        slider_item.get(maxIndex - 1).onload = function () {
 
-            if (i + 1 != maxIndex) {
+            context.baseWidth = parseFloat(slider_item.eq(maxIndex - 1).css('width'));
+            context.baseHeight = parseFloat(slider_item.eq(maxIndex - 1).css('height'));
+            context.maxIndex = (context.visibleCount + 1) / 2;
+
+
+            for (var i = 0; i < context.visibleCount; i++) {
+
                 slider_item.eq(i).css({
-                    'z-index': maxIndex - Math.abs(i + 1 - maxIndex),
-                    //'height': 0.9 * width_wrapper * Math.pow(0.8, Math.abs(i + 1 - maxIndex)) + 'px',
-                    'width': baseWidth * Math.pow(0.8, Math.abs(i + 1 - maxIndex)) + 'px',
-                    'top': 50 * Math.abs(i + 1 - maxIndex) + 50 + 'px'
+                    'z-index': setZIndex(i, context),
+                    'width': setWidth(i, context),
+                    'top': setTop(i, context)
+                });
+
+                slider_item.eq(i).css({
+                    'left':setLeft(i, context)
                 })
             }
+
+        };
+
+    }
+
+    /**
+     * 计算索引为index的元素的left属性
+     * @param index
+     * @param context
+     */
+    function setLeft(index, context) {
+        var range;
+        if (index + 1 === context.maxIndex) {
+            return (context.width_wrapper - context.baseWidth) / 2 + 'px';
+        } else if (index + 1 < context.maxIndex) {
+            range = Math.abs(context.maxIndex - (index + 1));
+            return (0.5 * context.width_wrapper) - parseFloat(context.item.eq(index).css('width')) / 2 - (range * 0.1 * context.width_wrapper) + 'px'
+        } else if (index + 1 > context.maxIndex) {
+            range = Math.abs(index + 1 - context.maxIndex);
+            return (0.5 * context.width_wrapper) - parseFloat(context.item.eq(index).css('width')) / 2 + (range * 0.1 * context.width_wrapper) + 'px'
         }
+    }
 
-        for (var l = 0; l < context.visibleCount; l++) {
+    /**
+     * 计算索引为index的元素的top属性
+     * @param index
+     * @param context
+     */
+    function setTop(index, context) {
 
-            if (l + 1 < maxIndex) {
-                var range = Math.abs(maxIndex - (l + 1));
-                console.log(range);
-                var left = 0;
-                for (var j = 0; j < range; j++) {
-                    console.log(parseFloat(slider_item.eq(l + j + 1).css('width')));
-                    left += (0.1 * width_wrapper);
-                }
-                console.log(left);
-                slider_item.eq(l).css({
-                    left: (0.5 * width_wrapper) - parseFloat(slider_item.eq(l).css('width')) / 2 - (range * 0.1 * width_wrapper) + 'px'
-                });
-            } else if (l + 1 > maxIndex) {
-                var range = Math.abs(l + 1 - maxIndex);
-                console.log(range);
-                var left = 0;
-                for (var k = 0; k < range; k++) {
-                    left += (0.1 * width_wrapper);
-                }
-                slider_item.eq(l).css({
-                    left: (0.5 * width_wrapper) - parseFloat(slider_item.eq(l).css('width')) / 2 + (range * 0.1 * width_wrapper) + 'px'
-                });
-            }
+        if (index + 1 === context.maxIndex) {
+
+            return '50px';
+
+        } else {
+
+            return context.baseHeight * Math.pow(context.scale, Math.abs(index + 1 - context.maxIndex)) * (1 - context.scale) / 2 + 50 + 'px';
+
         }
+    }
 
+    /**
+     * 计算索引为index的元素的width属性
+     * @param index
+     * @param context
+     */
+    function setWidth(index, context) {
+
+        return context.baseWidth * Math.pow(context.scale, Math.abs(index + 1 - context.maxIndex)) + 'px'
+
+    }
+
+    /**
+     * 设置索引为index的元素z-index属性
+     * @param context
+     * @param index
+     */
+    function setZIndex(index, context) {
+
+        if (index + 1 == context.maxIndex) {
+
+            return context.maxIndex;
+
+        } else {
+
+            return context.maxIndex - Math.abs(index + 1 - context.maxIndex);
+
+        }
     }
 
     /**
