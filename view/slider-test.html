@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>slider-test</title>
+</head>
+<body>
+<div class="banner" id="banner" style="height: 500px;">
+    <div class="slider">
+        <img src="../img/1.jpg" alt="" class="slider-item">
+        <img src="../img/2.jpg" alt="" class="slider-item">
+        <img src="../img/3.jpg" alt="" class="slider-item">
+        <img src="../img/4.jpg" alt="" class="slider-item">
+        <img src="../img/5.jpg" alt="" class="slider-item">
+        <img src="../img/6.jpg" alt="" class="slider-item">
+        <img src="../img/7.jpg" alt="" class="slider-item">
+    </div>
+</div>
+
+</body>
+<script src="../js/jquery.min.js"></script>
+<script src="../js/slider.js"></script>
+<script>
+    window.onload = function () {
+//        var myslider = new Slider('banner',{
+//            style:'surround',
+//            delay:4000,
+//            speed:500,
+//            visibleCount: 7,
+//            complete:function (index) {
+//                console.log(index);
+//            }
+//        });
+    };
+
+//    $(function () {
+        var myslider = new Slider('banner',{
+            style:'surround',
+            delay:4000,
+            speed:200,
+            visibleCount: 7,
+            complete:function (index) {
+//                console.log(index);
+            }
+        });
+//    });
+    myslider.play();
+
+
+
+</script>
+</html>
